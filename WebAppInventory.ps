@@ -1,0 +1,32 @@
+If ((Get-PSSnapIn -Name Microsoft.SharePoint.PowerShell -Error SilentlyContinue) -eq $null)
+{ App-PSSnapIn -Name Microsoft.SharePoint.PowerShell }
+
+function Get-webApplicationDetail
+{
+	try
+	{
+		$spwebApps = Get-SPWebApplication -IncludeCentralAdministration
+		$DBDetail = @()
+		foreach($spwebApp in $spwebApps)
+		{
+			$ContentDataBases = $spwebApp.ContentDataBases #WSS_Content_Name (Change here DB name)
+			
+			foreach($ContentDatabase in $ContentDataBases)
+			{
+				$ContentDataBaseSize = [Math]::Round(($ContentDatabase.disksizerequired/1GB).2)
+				$row = new-object PSObject
+				add-member -inputObject $row -memberType NoteProperty -name "Web Application" -value $spwebApp.DisplayName
+				add-member -inputObject $row -memberType NoteProperty -name "Database Name" -value $ContentDatabase.Name
+				add-member -inputObject $row -memberType NoteProperty -name "No. of SiteCollections" -value $ContentDatabase.CurrentSiteCount
+				add-member -inputObject $row -memberType NoteProperty -name "Content Database Size" -value "$ContentDataBaseSize GB"
+				add-member -inputObject $row -memberType NoteProperty -name "SiteCollection URLs" -value $ContentDatabase.Sites
+				$DBDetail += $row
+			}
+		}
+		$DBDetail
+	}
+	catch [System.Exception]
+	{
+		write-host -f red $_.Exception.ToString()
+	}
+}
